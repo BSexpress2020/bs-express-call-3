@@ -190,6 +190,19 @@
   .copy-btn{background:#fff;color:var(--red);font-size:13px;padding:8px 14px;margin-top:10px;}
 
   select:disabled{background:#F3F4F6;color:#98A2B3;cursor:not-allowed;}
+  #receiverProvince:disabled{color:var(--ink);-webkit-text-fill-color:var(--ink);opacity:1;cursor:default;}
+  .dest-field{margin:4px 0 14px;}
+  .dest-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  @media(max-width:420px){.dest-grid{grid-template-columns:repeat(2,1fr);}}
+  .dest-opt{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:11px 8px;font:inherit;font-size:14px;color:var(--ink);text-align:center;cursor:pointer;line-height:1.3;}
+  .dest-opt:hover{border-color:#E7A9A4;}
+  .dest-opt.on{border-color:var(--red);background:#FDEEEC;color:var(--red);font-weight:700;}
+  .dest-opt.other{grid-column:1/-1;}
+  .dest-status{font-size:13px;color:var(--ink-soft);margin-top:8px;}
+  .dest-status b{color:var(--red);}
+  .dest-chip{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#FFF7E0;border:1px solid #F5D77A;border-radius:10px;padding:10px 12px;margin:0 0 14px;font-size:14px;}
+  .dest-chip b{color:var(--red);}
+  .dest-chip button{border:0;background:none;color:var(--red);font:inherit;font-weight:600;text-decoration:underline;cursor:pointer;padding:4px;flex:none;}
   .item-traits{margin-top:14px;}
   .item-traits .lbl{display:block;font-size:13.5px;font-weight:600;margin-bottom:8px;}
   .item-traits .checkline:last-of-type{margin-bottom:0;}
@@ -202,6 +215,7 @@
   .date-pick input::-webkit-calendar-picker-indicator{position:absolute;inset:0;width:100%;height:100%;cursor:pointer;}
   .date-readout{font-size:13.5px;color:var(--ink-soft);margin-top:6px;}
   .date-readout.set{color:#15803D;font-weight:600;}
+  .date-readout.bad{color:var(--warn);font-weight:600;}
   input[readonly]{background:#F3F4F6;color:var(--ink);cursor:default;}
   .field-hint{display:block;font-size:12.5px;color:var(--ink-soft);margin-top:4px;}
   .step-hidden{display:none;}
@@ -300,14 +314,14 @@
           <input type="text" name="pickupZip" readonly placeholder="เติมให้อัตโนมัติ">
         </label>
         <label class="field">
-          <span class="lbl">เบอร์คนหน้างาน (ถ้าไม่ใช่เบอร์ผู้ส่ง)</span>
+          <span class="lbl">เบอร์ผู้ติดต่อ (ถ้าไม่ใช่เบอร์ผู้ส่ง)</span>
           <input type="tel" name="pickupPhone" placeholder="ไม่บังคับ">
           <span class="error-msg">กรุณากรอกเบอร์โทรให้ถูกต้อง</span>
         </label>
       </div>
 
       <label class="field">
-        <span class="lbl">วันที่ให้รถเข้ารับ (เลือกได้ตั้งแต่พรุ่งนี้เป็นต้นไป)</span>
+        <span class="lbl">วันที่ให้รถเข้ารับ (ตั้งแต่พรุ่งนี้เป็นต้นไป ไม่รวมวันอาทิตย์)</span>
         <div class="date-row">
           <input type="text" name="pickupDate" id="pickupDate" inputmode="numeric" autocomplete="off" maxlength="10" placeholder="วว/ดด/ปปปป เช่น 29/09/2569">
           <span class="date-pick" title="เลือกจากปฏิทิน">
@@ -316,7 +330,7 @@
           </span>
         </div>
         <div class="date-readout" id="dateReadout">พิมพ์วันที่เอง (วว/ดด/ปปปป) หรือกดไอคอนปฏิทินเพื่อเลือก</div>
-        <span class="error-msg">กรุณาเลือกวันที่ตั้งแต่พรุ่งนี้เป็นต้นไป</span>
+        <span class="error-msg">กรุณาเลือกวันที่ตั้งแต่พรุ่งนี้เป็นต้นไป (ไม่มีบริการเข้ารับวันอาทิตย์)</span>
       </label>
 
       </div>
@@ -337,10 +351,11 @@
       <button type="button" class="add-item-btn" onclick="addItemRow()">+ เพิ่มรายการพัสดุ</button>
       <div id="itemsError">กรอกน้ำหนัก ขนาด และจำนวนชิ้นให้ครบทุกรายการ</div>
 
-      <div class="row2">
-        <label class="field">
-          <span class="lbl">ปลายทาง</span>
-          <select name="destProvince" id="destProvince">
+      <div class="dest-field">
+        <span class="lbl" style="display:block;font-size:13.5px;font-weight:600;margin-bottom:8px;">ปลายทางของพัสดุ (แตะเพื่อเลือก)</span>
+        <div class="dest-grid" id="destGrid" role="radiogroup" aria-label="ปลายทางของพัสดุ"></div>
+        <div class="dest-status" id="destStatus"></div>
+        <select name="destProvince" id="destProvince" style="display:none" tabindex="-1" aria-hidden="true">
             <option value="bkk">กรุงเทพมหานคร</option>
             <option value="pathumthani">ปทุมธานี</option>
             <option value="nonthaburi">นนทบุรี</option>
@@ -352,7 +367,6 @@
             <option value="ratchaburi">ราชบุรี</option>
             <option value="other">จังหวัดอื่น ๆ (ต่างจังหวัด)</option>
           </select>
-        </label>
       </div>
 
       <div class="price-box" id="priceBox">
@@ -416,6 +430,7 @@
     <section class="card step step-hidden" data-step="5">
       <div class="step-title"><span class="step-num">3</span><h2 style="margin:0;font-size:18px;">ข้อมูลผู้รับ</h2></div>
       <p class="step-sub">ข้อมูลผู้รับปลายทางสำหรับส่งพัสดุ</p>
+      <div class="dest-chip" id="destChip"></div>
 
       
 
@@ -560,14 +575,17 @@ function toIso(dt){
 }
 function tomorrowDate(){ const t = new Date(); t.setHours(0,0,0,0); t.setDate(t.getDate()+1); return t; }
 function isFromTomorrow(v){ const dt = parseThaiDate(v); return !!dt && dt >= tomorrowDate(); }
+function isPickupDay(v){ const dt = parseThaiDate(v); return !!dt && dt >= tomorrowDate() && dt.getDay() !== 0; }
 function setMinPickupDate(){ document.getElementById('pickupDatePicker').min = toIso(tomorrowDate()); }
 function updateDateReadout(){
   const r = document.getElementById('dateReadout');
   const dt = parseThaiDate(document.getElementById('pickupDate').value);
-  if(!dt){ r.textContent = 'พิมพ์วันที่เอง (วว/ดด/ปปปป) หรือกดไอคอนปฏิทินเพื่อเลือก'; r.classList.remove('set'); return; }
+  if(!dt){ r.textContent = 'พิมพ์วันที่เอง (วว/ดด/ปปปป) หรือกดไอคอนปฏิทินเพื่อเลือก'; r.classList.remove('set','bad'); return; }
   let t;
   try{ t = dt.toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'long',year:'numeric'}); }
   catch(e){ t = fmtThaiDate(dt); }
+  if(dt.getDay() === 0){ r.textContent = 'วันอาทิตย์ไม่มีบริการเข้ารับ กรุณาเลือกวันอื่น'; r.classList.remove('set'); r.classList.add('bad'); return; }
+  r.classList.remove('bad');
   r.textContent = 'วันที่เลือก: '+t; r.classList.add('set');
 }
 (function(){
@@ -686,7 +704,7 @@ const fieldRules = {
     {name:'pickupDistrict', test:v=>v!=='', msg:'กรุณาเลือกอำเภอ/เขต'},
     {name:'pickupProvince', test:v=>v!=='', msg:'กรุณาเลือกจังหวัด'},
     {name:'pickupPhone', test:v=>v.trim()===''||isValidPhone(v), msg:'กรุณากรอกเบอร์โทรให้ถูกต้อง เช่น 0812345678'},
-    {name:'pickupDate', test:isFromTomorrow, msg:'กรุณากรอกวันที่ให้ถูกต้อง (วว/ดด/ปปปป) และเป็นวันพรุ่งนี้เป็นต้นไป'}
+    {name:'pickupDate', test:isPickupDay, msg:'กรุณากรอกวันที่ให้ถูกต้อง (วว/ดด/ปปปป) เป็นวันพรุ่งนี้เป็นต้นไป และไม่ใช่วันอาทิตย์'}
   ],
   5: [
     {name:'receiverName', test:isValidName, msg:'กรุณากรอกชื่อผู้รับให้ถูกต้อง'},
@@ -797,7 +815,7 @@ function itemRowTemplate(){
     '<span class="field-hint" style="margin-top:6px;">ขนาดที่มีเศษทศนิยม ระบบจะปัดขึ้นเป็นเซนติเมตรเต็มก่อนคำนวณราคา</span>'+
     '<label class="field" style="margin-top:10px;"><span class="lbl">จำนวนชิ้น (ขนาด/น้ำหนักเท่ากันในรายการนี้)</span>'+
       '<input type="number" min="1" step="1" class="item-qty" placeholder="เช่น 3"></label>'+
-    '<div class="item-traits"><span class="lbl">ลักษณะพัสดุ (ถ้ามี — แจ้งให้ทีมงานทราบล่วงหน้า)</span>'+
+    '<div class="item-traits"><span class="lbl">ลักษณะพัสดุ (ถ้ามี — คิดค่าบริการเพิ่ม 25% ต่อข้อ)</span>'+
       '<label class="checkline"><input type="checkbox" class="trait-fragile"> ของแตกง่าย / เสียหายง่าย</label>'+
       '<label class="checkline"><input type="checkbox" class="trait-heavy"> ของหนัก / ยกลำบาก</label>'+
       '<label class="checkline"><input type="checkbox" class="trait-valuable"> ของมูลค่าสูง</label></div>'+
@@ -824,6 +842,7 @@ function renumberItems(){
   });
 }
 
+const TRAIT_STEP = 0.25; // พัสดุพิเศษ: ตัวคูณเพิ่มข้อละ 0.25 (1 ข้อ ×1.25, 2 ข้อ ×1.50, 3 ข้อ ×1.75)
 function recalcAll(){
   const rows = document.querySelectorAll('.item-row');
   const box = document.getElementById('priceBox');
@@ -832,6 +851,7 @@ function recalcAll(){
   const payer = document.querySelector('input[name=payerType]:checked').value;
 
   const itemsDetail = [];
+  let baseTotal = 0;
   let totalQty = 0, totalValue = 0, anyFilled = false, allComplete = true, anyOversize = false;
 
   rows.forEach((row,idx)=>{
@@ -863,12 +883,19 @@ function recalcAll(){
       allComplete = false;
       return;
     }
-    const perItemPrice = isZone9 ? tier.priceZone : tier.priceOut;
+    const baseUnit = isZone9 ? tier.priceZone : tier.priceOut;
+    const traitsN = ['.trait-fragile','.trait-heavy','.trait-valuable'].filter(s=>row.querySelector(s).checked).length;
+    const mult = 1 + TRAIT_STEP * traitsN;
+    const perItemPrice = traitsN ? Math.ceil(baseUnit * mult - 1e-9) : baseUnit;
     const rowSubtotal = perItemPrice * qty;
     totalQty += qty;
     totalValue += rowSubtotal;
-    itemsDetail.push({n:idx+1, weight, width:wC, length:lC, height:hC, qty, tier:tier.label, unit:perItemPrice});
-    resultEl.innerHTML = roundNote+'ขนาดรวม '+wC+' + '+lC+' + '+hC+' = '+sum+' ซม. • ขนาด '+tier.label+' • '+perItemPrice.toLocaleString()+' บาท × '+qty+' = <b>'+rowSubtotal.toLocaleString()+' บาท</b>';
+    baseTotal += baseUnit * qty;
+    itemsDetail.push({n:idx+1, weight, width:wC, length:lC, height:hC, qty, tier:tier.label, unit:perItemPrice, baseUnit, traitsN, mult});
+    const unitTxt = traitsN
+      ? baseUnit.toLocaleString()+' × '+mult.toFixed(2)+' (พัสดุพิเศษ '+traitsN+' ข้อ) = '+perItemPrice.toLocaleString()
+      : perItemPrice.toLocaleString();
+    resultEl.innerHTML = roundNote+'ขนาดรวม '+wC+' + '+lC+' + '+hC+' = '+sum+' ซม. • ขนาด '+tier.label+' • '+unitTxt+' บาท × '+qty+' = <b>'+rowSubtotal.toLocaleString()+' บาท</b>';
   });
 
   window.lastOversize = anyOversize;
@@ -892,9 +919,14 @@ function recalcAll(){
     else { minCharge = true; grandTotal = PICKUP_MIN_FEE; }
   }
   const destSel = document.getElementById('destProvince');
-  window.lastCalc = {rowCount: rows.length, totalQty, totalValue, grandTotal, itemsDetail, dest: destSel.options[destSel.selectedIndex].text};
+  const surcharge = totalValue - baseTotal;
+  window.lastCalc = {rowCount: rows.length, totalQty, totalValue, baseTotal, surcharge, grandTotal, itemsDetail, dest: destSel.options[destSel.selectedIndex].text};
 
   let html = '<div class="price-row"><span class="k">จำนวนรายการ</span><span class="v">'+rows.length+' รายการ • รวม '+totalQty+' ชิ้น</span></div>';
+  if(surcharge > 0){
+    html += '<div class="price-row"><span class="k">ค่าขนส่งตามตาราง</span><span class="v">'+baseTotal.toLocaleString()+' บาท</span></div>';
+    html += '<div class="price-row"><span class="k">ค่าบริการพัสดุพิเศษ</span><span class="v">+'+surcharge.toLocaleString()+' บาท</span></div>';
+  }
   html += '<div class="price-row"><span class="k">รวมค่าขนส่ง</span><span class="v">'+totalValue.toLocaleString()+' บาท</span></div>';
   if(payer !== 'droppoint'){
     html += '<div class="price-row"><span class="k">ค่าเข้ารับ</span><span class="v">'+(minCharge ? 'คิดขั้นต่ำ '+PICKUP_MIN_FEE+' บาท (ของไม่ถึง 3 ชิ้น) ไม่บวกเพิ่ม' : feeNote)+'</span></div>';
@@ -906,7 +938,30 @@ function recalcAll(){
 }
 
 document.getElementById('itemsContainer').addEventListener('input', recalcAll);
-document.getElementById('destProvince').addEventListener('change', function(){ recalcAll(); syncReceiverProvince(); });
+document.getElementById('itemsContainer').addEventListener('change', recalcAll);
+document.getElementById('destProvince').addEventListener('change', function(){ recalcAll(); syncReceiverProvince(); updateDestUI(); });
+(function buildDestChoices(){
+  const sel = document.getElementById('destProvince'), grid = document.getElementById('destGrid');
+  [...sel.options].forEach(function(o){
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'dest-opt' + (o.value === 'other' ? ' other' : ''); b.dataset.v = o.value;
+    b.setAttribute('role','radio');
+    b.textContent = o.value === 'bkk' ? 'กรุงเทพฯ' : o.value === 'other' ? 'ต่างจังหวัด (จังหวัดอื่น ๆ)' : o.text;
+    b.addEventListener('click', function(){ if(sel.value !== o.value){ sel.value = o.value; sel.dispatchEvent(new Event('change')); } });
+    grid.appendChild(b);
+  });
+})();
+function updateDestUI(){
+  const sel = document.getElementById('destProvince');
+  document.querySelectorAll('#destGrid .dest-opt').forEach(function(b){
+    const on = b.dataset.v === sel.value; b.classList.toggle('on', on); b.setAttribute('aria-checked', on ? 'true' : 'false');
+  });
+  const name = sel.options[sel.selectedIndex].text;
+  document.getElementById('destStatus').innerHTML = sel.value === 'other'
+    ? 'เลือกอยู่: <b>ต่างจังหวัด</b> • ใช้ราคาต่างจังหวัด (เลือกจังหวัดจริงในขั้นตอนข้อมูลผู้รับ)'
+    : 'เลือกอยู่: <b>' + esc(name) + '</b> • ใช้ราคาโซน 9 จังหวัด';
+}
+updateDestUI();
 
 function prefillFromQuery(){
   const p = new URLSearchParams(window.location.search);
@@ -919,9 +974,11 @@ function prefillFromQuery(){
   recalcAll();
 }
 
+function editDest(){ showStep(Number(document.getElementById('destProvince').closest('.step').dataset.step)); setTimeout(function(){ document.getElementById('destProvince').focus(); }, 400); }
 function syncReceiverProvince(){
   const sel = document.getElementById('receiverProvince');
   const hint = document.getElementById('receiverProvinceHint');
+  const chip = document.getElementById('destChip');
   const zoneSel = document.getElementById('destProvince');
   const zoneNames = [...zoneSel.options].filter(o=>o.value!=='other').map(o=>o.text);
   const isOther = zoneSel.value === 'other';
@@ -932,14 +989,16 @@ function syncReceiverProvince(){
     list = thaiProvinces.filter(p=>!zoneNames.includes(p)).sort(th);
     fillOptions(sel, list, 'เลือกจังหวัด');
     sel.disabled = false;
-    hint.textContent = 'ปลายทางต่างจังหวัด: เลือกได้เฉพาะจังหวัดนอกเหนือจาก 9 จังหวัดในตารางราคา';
+    hint.textContent = 'เลือกจังหวัดปลายทางที่ไม่ใช่ 9 จังหวัดในตารางราคา';
+    chip.innerHTML = '<span>ปลายทาง: <b>ต่างจังหวัด</b> (เลือกจังหวัดด้านล่าง)</span><button type="button" onclick="editDest()">เปลี่ยน</button>';
   } else {
     const name = zoneSel.options[zoneSel.selectedIndex].text;
     list = [name];
     sel.innerHTML = '';
     const o = document.createElement('option'); o.value = name; o.textContent = name; sel.appendChild(o);
     sel.disabled = true;
-    hint.textContent = 'ตรงกับปลายทางที่เลือกไว้ในขั้นตอนรายละเอียดพัสดุ (ถ้าจะเปลี่ยน ให้ย้อนกลับไปแก้ที่ขั้นตอนนั้น)';
+    hint.textContent = 'ล็อกตามปลายทางที่เลือกไว้ ถ้าจะเปลี่ยนให้กดปุ่ม "เปลี่ยน" ด้านบน';
+    chip.innerHTML = '<span>ปลายทาง: <b>'+esc(name)+'</b></span><button type="button" onclick="editDest()">เปลี่ยน</button>';
   }
   sel.value = list.includes(prev) ? prev : (isOther ? '' : list[0]);
   if(sel.value !== prev) sel.dispatchEvent(new Event('change'));
@@ -972,13 +1031,14 @@ function buildSummary(){
   if(payer !== 'droppoint'){
     rows.push(['เข้ารับที่', fmtAddr(f.pickupAddress.value, f.pickupSubdistrict.value, f.pickupDistrict.value, f.pickupProvince.value, f.pickupZip.value)]);
     const pd = parseThaiDate(f.pickupDate.value); rows.push(['วันที่เข้ารับ', pd ? fmtThaiDate(pd) : '-']);
-    if(f.pickupPhone.value.trim()) rows.push(['เบอร์คนหน้างาน', esc(f.pickupPhone.value)]);
+    if(f.pickupPhone.value.trim()) rows.push(['เบอร์ผู้ติดต่อ', esc(f.pickupPhone.value)]);
   }
   const c = window.lastCalc;
   rows.push(['รายการพัสดุ', c ? (c.rowCount+' รายการ • รวม '+c.totalQty+' ชิ้น') : '-']);
   if(c){
     rows.push(['โซนปลายทาง', c.dest]);
-    rows.push(['รายละเอียดพัสดุ', c.itemsDetail.map(it=>it.n+') '+it.weight+' กก. '+it.width+'×'+it.length+'×'+it.height+' ซม. × '+it.qty+' ชิ้น • ไซซ์ '+it.tier+' • '+it.unit.toLocaleString()+' บาท/ชิ้น').join('<br>')]);
+    if(c.surcharge > 0) rows.push(['ค่าบริการพัสดุพิเศษ (รวมในค่าขนส่งแล้ว)', c.surcharge.toLocaleString()+' บาท']);
+    rows.push(['รายละเอียดพัสดุ', c.itemsDetail.map(it=>it.n+') '+it.weight+' กก. '+it.width+'×'+it.length+'×'+it.height+' ซม. × '+it.qty+' ชิ้น • ไซซ์ '+it.tier+' • '+(it.traitsN ? it.baseUnit.toLocaleString()+' × '+it.mult.toFixed(2)+' (พัสดุพิเศษ '+it.traitsN+' ข้อ) = ' : '')+it.unit.toLocaleString()+' บาท/ชิ้น').join('<br>')]);
   }
   const traits = itemTraitsSummary();
   if(traits) rows.push(['ลักษณะพัสดุ', traits]);
@@ -1037,7 +1097,7 @@ function buildPayload(ref){
   const c = window.lastCalc || {};
   return {
     ref, createdAt: new Date().toISOString(),
-    payer: g('รูปแบบการจัดส่ง'), pickupAddress: g('เข้ารับที่'), pickupDate: g('วันที่เข้ารับ'), pickupPhone: g('เบอร์คนหน้างาน'),
+    payer: g('รูปแบบการจัดส่ง'), pickupAddress: g('เข้ารับที่'), pickupDate: g('วันที่เข้ารับ'), pickupPhone: g('เบอร์ผู้ติดต่อ'),
     dest: g('โซนปลายทาง'), items: g('รายการพัสดุ'), itemsDetail: g('รายละเอียดพัสดุ', '\n'), traits: g('ลักษณะพัสดุ'),
     total: c.grandTotal || '', payment: g('วิธีชำระเงิน'), sender: g('ผู้ส่ง'), receiver: g('ผู้รับ'),
     receiverAddress: g('ที่อยู่ผู้รับ'), note: g('หมายเหตุ'), text: summaryText(false)
