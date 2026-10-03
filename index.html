@@ -281,6 +281,10 @@
             <span class="error-msg">กรุณากรอกเบอร์โทรให้ถูกต้อง</span>
           </label>
         </div>
+        <label class="field">
+          <span class="lbl">ID Line (ถ้ามี)</span>
+          <input type="text" name="senderLine" maxlength="40" autocomplete="off" placeholder="ไม่มีไม่เป็นไร ร้านจะโทรติดต่อตามเบอร์ที่กรอก">
+        </label>
       </fieldset>
 
       <div id="pickupFields">
@@ -1045,6 +1049,7 @@ function buildSummary(){
   rows.push(['ค่าขนส่งรวม (ประมาณการ)', c ? (c.grandTotal.toLocaleString()+' บาท') : '-']);
   rows.push(['วิธีชำระเงิน', paymentLabels[f.paymentMethod.value]]);
   rows.push(['ผู้ส่ง', esc(f.senderName.value)+' • '+esc(f.senderPhone.value)]);
+  rows.push(['ID Line ลูกค้า', f.senderLine.value.trim() ? esc(f.senderLine.value.trim()) : 'ไม่ได้ระบุ']);
   rows.push(['ผู้รับ', esc(f.receiverName.value)+' • '+esc(f.receiverPhone.value)]);
   window.lastRows = rows;
   rows.push(['ที่อยู่ผู้รับ', fmtAddr(f.receiverAddress.value, f.receiverSubdistrict.value, f.receiverDistrict.value, f.receiverProvince.value, f.receiverZip.value)]);
@@ -1100,7 +1105,7 @@ function buildPayload(ref){
     payer: g('รูปแบบการจัดส่ง'), pickupAddress: g('เข้ารับที่'), pickupDate: g('วันที่เข้ารับ'), pickupPhone: g('เบอร์ผู้ติดต่อ'),
     dest: g('โซนปลายทาง'), items: g('รายการพัสดุ'), itemsDetail: g('รายละเอียดพัสดุ', '\n'), traits: g('ลักษณะพัสดุ'),
     total: c.grandTotal || '', payment: g('วิธีชำระเงิน'), sender: g('ผู้ส่ง'), receiver: g('ผู้รับ'),
-    receiverAddress: g('ที่อยู่ผู้รับ'), note: g('หมายเหตุ'), text: summaryText(false)
+    receiverAddress: g('ที่อยู่ผู้รับ'), note: g('หมายเหตุ'), lineId: g('ID Line ลูกค้า'), text: summaryText(false)
   };
 }
 function showSuccess(mode){
@@ -1125,7 +1130,7 @@ function saveSender(){
   const f = document.getElementById('bookingForm');
   try{
     if(!f.rememberSender.checked){ localStorage.removeItem(SENDER_KEY); return; }
-    localStorage.setItem(SENDER_KEY, JSON.stringify({name:f.senderName.value, phone:f.senderPhone.value, addr:f.pickupAddress.value, prov:f.pickupProvince.value, dist:f.pickupDistrict.value, sub:f.pickupSubdistrict.value}));
+    localStorage.setItem(SENDER_KEY, JSON.stringify({name:f.senderName.value, phone:f.senderPhone.value, line:f.senderLine.value, addr:f.pickupAddress.value, prov:f.pickupProvince.value, dist:f.pickupDistrict.value, sub:f.pickupSubdistrict.value}));
   }catch(e){}
 }
 function loadSender(){
@@ -1133,7 +1138,7 @@ function loadSender(){
   try{
     const s = JSON.parse(localStorage.getItem(SENDER_KEY) || 'null');
     if(!s) return;
-    f.senderName.value = s.name || ''; f.senderPhone.value = s.phone || ''; f.pickupAddress.value = s.addr || '';
+    f.senderName.value = s.name || ''; f.senderPhone.value = s.phone || ''; f.senderLine.value = s.line || ''; f.pickupAddress.value = s.addr || '';
     [['pickupProvince',s.prov],['pickupDistrict',s.dist],['pickupSubdistrict',s.sub]].forEach(([n,v])=>{
       const el = f[n]; if(!v) return; el.value = v;
       if(el.value === v) el.dispatchEvent(new Event('change'));
@@ -1161,7 +1166,22 @@ const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzXCgEGifWHTTEKJWVu
 function summaryText(withTail){
   if(withTail === undefined) withTail = true;
   const rows = window.lastRows || [];
-  return 'BS Express — สรุปการจอง\nเลขที่จอง: '+document.getElementById('refCodeOut').textContent+'\n'+rows.map(r=>r[0]+': '+unesc(String(r[1]).replace(/<br>/g,'\n   '))).join('\n')+(withTail ? '\n\n(กรุณากดส่งข้อความนี้เพื่อยืนยันการจอง)' : '');
+  const g = (l) => { const r = rows.find(x=>x[0]===l); return r ? unesc(String(r[1]).replace(/<br>/g,'\n')) : ''; };
+  const one = (label, val) => val ? [label+': '+val] : [];
+  const block = (label, val) => { if(!val) return []; const p = val.split('\n'); return p.length > 1 ? [label+':'].concat(p) : [label+': '+val]; };
+  const out = [].concat(
+    ['เลขที่จอง: '+document.getElementById('refCodeOut').textContent],
+    one('รูปแบบการจัดส่ง', g('รูปแบบการจัดส่ง')), [''],
+    one('ผู้ส่ง', g('ผู้ส่ง')), one('เข้ารับที่', g('เข้ารับที่')), one('วันที่เข้ารับ', g('วันที่เข้ารับ')), one('เบอร์ผู้ติดต่อ', g('เบอร์ผู้ติดต่อ')), [''],
+    one('ผู้รับ', g('ผู้รับ')), one('ที่อยู่ผู้รับ', g('ที่อยู่ผู้รับ')), [''],
+    block('รายละเอียดพัสดุ', g('รายละเอียดพัสดุ')),
+    block('ลักษณะพัสดุ', g('ลักษณะพัสดุ')),
+    one('ค่าบริการพัสดุพิเศษ (รวมในค่าขนส่งแล้ว)', g('ค่าบริการพัสดุพิเศษ (รวมในค่าขนส่งแล้ว)')), [''],
+    one('รายการพัสดุ', g('รายการพัสดุ')), one('ค่าขนส่งรวม (ประมาณการ)', g('ค่าขนส่งรวม (ประมาณการ)')),
+    one('หมายเหตุ', g('หมายเหตุ')), [''],
+    one('ID Line ลูกค้า', g('ID Line ลูกค้า')), one('วิธีชำระเงิน', g('วิธีชำระเงิน'))
+  );
+  return 'BS Express — สรุปการจอง\n' + out.join('\n') + (withTail ? '\n\n(กรุณากดส่งข้อความนี้เพื่อยืนยันการจอง)' : '');
 }
 function openLine(){
   const url = 'https://line.me/R/oaMessage/'+LINE_OA_ID+'/?'+encodeURIComponent(summaryText());
